@@ -1,0 +1,58 @@
+Resources:
+  CodeBuildRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: SecurityCodeBuildRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [codebuild.amazonaws.com]
+            Action: sts:AssumeRole
+
+  CodebuildBasePolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: 'CodebuildBasePolicy'
+      Roles: [{Ref: "CodeBuildRole"}]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowS3Object
+            Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:GetBucketAcl
+              - s3:GetBucketLocation
+            Resource:
+              !Join
+                - ''
+                - - !ImportValue SecurityDeploymentBucketArn
+                  - '*'
+          - Sid: AllowCreatingLogs
+            Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*:*:*
+          - Sid: AccountAlias
+            Effect: Allow
+            Action:
+              - iam:ListAccountAliases
+            Resource: '*'
+
+Outputs:
+  CodeBuildRoleName:
+    Description: The name of the role
+    Value: !Ref CodeBuildRole
+    Export:
+      Name: SecurityCodeBuildRoleName
+  CodeBuildRoleArn:
+    Description: The arn value of the role for the codebuild
+    Value: !GetAtt CodeBuildRole.Arn
+    Export:
+      Name: SecurityCodeBuildRoleArn

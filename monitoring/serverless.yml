@@ -1,0 +1,146 @@
+service: buildStatus
+
+custom:
+  stage: ${opt:stage, 'matsonlabs'}
+  environment:
+    MESSAGE:
+      mlscDev: "mlscDev"
+      mlscPreprod: "mlscPreprod"
+      mlscProd: "mlscProd"
+      mdaas: "mdaas"
+      infosec: "infosec"
+      matsonlabs: "matsonlabs"
+      qa: "qa"
+      dr: "dr"
+      org: "org"
+      china: "china"
+      workspaces: "workspaces"
+      dev: "This is running development environment"
+      pp: "This is running pp environment"
+      prod: "This is running production environment"
+
+provider:
+  name: aws
+  runtime: python3.7
+  memorySize: 128
+  timeout: 180
+  stage: ${self:custom.stage}
+  environment:
+    MESSAGE: ${self:custom.environment.MESSAGE.${self:custom.stage}}
+  region: us-west-2
+
+package:
+  individually: true
+  exclude:
+    - "**/*"  # quotes(") are needed
+
+functions:
+  buildStatus:
+    handler: buildStatus_function.lambda_handler
+    package:
+      include:
+        - "buildStatus_function.py"
+        - "slack_alert.py"
+    name: buildStatus-${self:provider.stage}
+    role: SlackRole
+    environment:
+      # SERVICE: ${env:SERVICE}
+      REGION: ${self:provider.region}
+      ACCOUNT_ALIAS: ${env:ACCOUNT_ALIAS}
+
+resources:
+  Resources:
+    DefaultPolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: ${self:service}LambdaPolicy
+        Roles:
+          - Ref: "SlackRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: CreateLogStream
+              Effect: Allow
+              Action:
+                - logs:CreateLogStream
+              Resource:
+                - arn:aws:logs:${self:provider.region}:${env:ACCOUNT_ID}:log-group:/aws/lambda/${self:functions.buildStatus.name}:*
+            - Sid: PutLogEvents
+              Effect: Allow
+              Action:
+                - logs:PutLogEvents
+              Resource:
+                - arn:aws:logs:${self:provider.region}:${env:ACCOUNT_ID}:log-group:/aws/lambda/${self:functions.buildStatus.name}:*:*
+            - Sid: PutMetricData
+              Effect: Allow
+              Action:
+                - cloudwatch:PutMetricData
+              Resource: "*"
+      DependsOn:
+        - SlackRole
+
+    DefaultKMSPolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: DecryptSSMErrorPolicy
+        Roles:
+          - Ref: "SlackRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: AllowDecryptSSM
+              Effect: Allow
+              Action:
+                - kms:Decrypt
+                - kms:Encrypt
+                - kms:GenerateDataKey
+                - ssm:GetParameters
+              Resource:
+                - Fn::ImportValue: SecurityErrorsKMSKeyArn
+                - arn:aws:ssm:${self:provider.region}:${env:ACCOUNT_ID}:parameter/SECURITY_ERRORS*
+
+# Build Status
+    SlackRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        RoleName: buildStatusRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+    SlackKMSPolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: SlackKMSPolicy
+        Roles:
+          - Ref: "SlackRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: AllowDecryptSSM
+              Effect: Allow
+              Action:
+                - kms:Decrypt
+                - ssm:GetParameters
+              Resource:
+                - Fn::ImportValue: SecurityDeploymentKMSKeyArn
+                - arn:aws:ssm:${self:provider.region}:${env:ACCOUNT_ID}:parameter/SECURITY_DEPLOYMENT*
+
+  Outputs:
+    BuildStatusLambdaFunction:
+      Description: The name of the build status lambda
+      Value: ${self:functions.buildStatus.name}
+      Export:
+        Name: buildStatusName   
+    BuildStatusLambdaFunctionShortArn:
+      Value: arn:aws:lambda:${self:provider.region}:${env:ACCOUNT_ID}:function:${self:functions.buildStatus.name}
+      Export:
+        Name: buildStatusShortArn
+    BuildStatusLambdaFunctionQualifiedArn:
+      Export:
+        Name: buildStatusArn
+    

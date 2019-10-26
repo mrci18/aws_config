@@ -1,0 +1,19 @@
+Resources:
+  ConfigPermissionToCallLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !ImportValue tagSgForTerminationArn
+      Action: "lambda:InvokeFunction"
+      Principal: "config.amazonaws.com"
+  ConfigRuleForUnattachedSecurityGroups: 
+    Type: AWS::Config::ConfigRule
+    Properties: 
+      ConfigRuleName: ConfigRuleForUnattachedSecurityGroups
+      Source: 
+        Owner: "CUSTOM_LAMBDA"
+        SourceDetails: 
+          - 
+            EventSource: "aws.config"
+            MaximumExecutionFrequency: "TwentyFour_Hours"
+            MessageType: "ScheduledNotification"
+        SourceIdentifier: !ImportValue tagSgForTerminationArn

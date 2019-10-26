@@ -1,0 +1,209 @@
+service: ${env:SERVICE}
+
+provider:
+  name: aws
+  runtime: python3.6
+  memorySize: 128
+  timeout: 180
+  stage: prod
+  region: us-west-2
+
+package:
+  individually: true
+  exclude:
+    - "**/*"  # quotes(") are needed
+
+functions:
+  tagSgForTermination:
+    handler: config_tag_sg_for_termination.lambda_handler
+    package:
+      include:
+        - "config_tag_sg_for_termination.py"
+        - "slack_alert.py"
+    name: ${self:service}_tag_sg_for_termination
+    role: CheckRole
+    environment:
+      SERVICE: ${self:service}
+      REGION: ${self:provider.region}
+      ACCOUNT_ALIAS: ${env:ACCOUNT_ALIAS}
+
+  deleteTaggedForTermination:
+    handler: delete_tagged_for_termination.lambda_handler
+    package:
+      include:
+        - "delete_tagged_for_termination.py"
+        - "slack_alert.py"
+    name: ${self:service}_delete_tagged_for_termination
+    role: DeleteRole
+    environment:
+      SERVICE: ${self:service}
+      REGION: ${self:provider.region}
+      ACCOUNT_ALIAS: ${env:ACCOUNT_ALIAS}
+    events:
+      - schedule: cron(0 7 * * ? *) # 10PM Oakland
+
+resources:
+  Resources:
+# Permissions for config_tag_sg_for_termination.py
+    CheckRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        RoleName: ${self:functions.tagSgForTermination.name}LambdaRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+    CheckDefaultPolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: ${self:functions.tagSgForTermination.name}LambdaPolicy
+        Roles:
+          - Ref: "CheckRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: CreateLogStream
+              Effect: Allow
+              Action:
+                - logs:CreateLogStream
+              Resource:
+                - arn:aws:logs:${self:provider.region}:${env:ACCOUNT_ID}:log-group:/aws/lambda/${self:functions.tagSgForTermination.name}:*
+            - Sid: PutLogEvents
+              Effect: Allow
+              Action:
+                - logs:PutLogEvents
+              Resource:
+                - arn:aws:logs:${self:provider.region}:${env:ACCOUNT_ID}:log-group:/aws/lambda/${self:functions.tagSgForTermination.name}:*:*
+      DependsOn:
+        - CheckRole
+
+    CheckPolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: ${self:functions.tagSgForTermination.name}LambdaExecutionPolicy
+        Roles:
+          - Ref: "CheckRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: CheckExecution
+              Effect: Allow
+              Action:
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeSecurityGroups
+              - lambda:ListFunctions
+              - config:PutEvaluations
+              Resource: "*"
+            - Sid: CreateTags
+              Effect: Allow
+              Action:
+              - ec2:CreateTags
+              Resource: "arn:aws:ec2:${self:provider.region}:${env:ACCOUNT_ID}:security-group/*"
+      DependsOn:
+        - CheckRole
+
+# Permissions for delete_tagged_for_termination.py
+    DeleteRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        RoleName: ${self:functions.deleteTaggedForTermination.name}LambdaRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+    DeleteDefaultPolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: ${self:functions.deleteTaggedForTermination.name}LambdaPolicy
+        Roles:
+          - Ref: "DeleteRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: CreateLogStream
+              Effect: Allow
+              Action:
+                - logs:CreateLogStream
+              Resource:
+                - arn:aws:logs:${self:provider.region}:${env:ACCOUNT_ID}:log-group:/aws/lambda/${self:functions.deleteTaggedForTermination.name}:*
+            - Sid: PutLogEvents
+              Effect: Allow
+              Action:
+                - logs:PutLogEvents
+              Resource:
+                - arn:aws:logs:${self:provider.region}:${env:ACCOUNT_ID}:log-group:/aws/lambda/${self:functions.deleteTaggedForTermination.name}:*:*
+      DependsOn:
+        - DeleteRole  
+
+    DeletePolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: ${self:functions.deleteTaggedForTermination.name}LambdaExecutionPolicy
+        Roles:
+          - Ref: "DeleteRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: DescribeTags
+              Effect: Allow
+              Action:
+              - ec2:DescribeTags
+              Resource: "*"
+            - Sid: DeleteSgs
+              Effect: Allow
+              Action:
+              - ec2:DeleteSecurityGroup
+              Resource: "arn:aws:ec2:${self:provider.region}:${env:ACCOUNT_ID}:security-group/*"
+            - Sid: CreateTags
+              Effect: Allow
+              Action:
+              - ec2:CreateTags
+              Resource: "arn:aws:ec2:${self:provider.region}:${env:ACCOUNT_ID}:security-group/*"
+      DependsOn:
+        - DeleteRole
+
+# KMS and SSM for slack alerts, used by both
+    DefaultKMSPolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: ${self:service}DecryptSSMPolicy
+        Roles:
+          - Ref: "CheckRole"
+          - Ref: "DeleteRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: AllowDecryptSSM
+              Effect: Allow
+              Action:
+                - kms:Decrypt
+                - kms:Encrypt
+                - kms:GenerateDataKey
+                - ssm:GetParameters
+              Resource:
+                - Fn::ImportValue: SecurityErrorsKMSKeyArn
+                - arn:aws:ssm:${self:provider.region}:${env:ACCOUNT_ID}:parameter/SECURITY_ERRORS*
+      DependsOn:
+        - CheckRole
+        - DeleteRole
+
+  Outputs:
+    TagSgForTerminationLambdaFunctionQualifiedArn:
+      Export:
+        Name: tagSgForTerminationArn
+
+    DeleteTaggedForTerminationLambdaFunctionQualifiedArn:
+      Export:
+        Name: deleteTaggedForTerminationArn
+
+    ServerlessDeploymentBucketName:
+      Export:
+        Name: configServerlessBucket

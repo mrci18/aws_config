@@ -1,0 +1,37 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 10
+      python: 3.7
+    commands:
+      - npm i -g serverless
+  pre_build:
+    commands:
+      - pwd
+      - export rootDir=$(pwd)
+      - export ACCOUNT_ALIAS=$(aws iam list-account-aliases --query "AccountAliases[]" --output text)
+      - echo ${ACCOUNT_ALIAS}
+      - export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query 'Account')
+      - echo ${ACCOUNT_ID}
+
+  build:
+    commands:
+      - role=$(aws sts assume-role --role-arn ${DEPLOYERARN} --role-session-name config-deployer-session --duration-seconds 900)
+      - KEY=$(echo $role |awk '{print $5}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
+      - SECRET=$(echo $role |awk '{print $7}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
+      - TOKEN=$(echo $role |awk '{print $9}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
+      - export AWS_ACCESS_KEY_ID=$KEY
+      - export AWS_SESSION_TOKEN=$TOKEN
+      - export AWS_SECRET_ACCESS_KEY=$SECRET
+      - export AWS_DEFAULT_REGION=us-west-2
+      - echo "SLS Deploy"
+      # - cd ${rootDir}/monitoring && npm install && sls deploy
+      # - cd ${rootDir}/infra/pipeline/monitoring && aws cloudformation deploy --no-fail-on-empty-changeset --template-file./BuildStatus.yaml --stack-name BuildStatusCWEvent --parameter-overrides Service=securityConfig
+      # - cd ${rootDir}/tag_for_termination && npm install && sls deploy
+      # - cd ${rootDir}/tag_for_termination && aws cloudformation deploy -template-file ./config.yaml --stack-name TagForTerminationConfig
+
+  post_build:
+    commands:
+      - echo Done!

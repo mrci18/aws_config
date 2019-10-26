@@ -1,0 +1,186 @@
+Resources:
+  DefaultCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${Service}
+      Description: !Sub Build for ${Service}
+      ServiceRole: !ImportValue SecurityCodeBuildRoleArn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:2.0
+        EnvironmentVariables:
+          - Name: SERVICE
+            Value: !Ref Service
+          - Name: DEPLOYERARN
+            Value: 
+              Fn::ImportValue: 
+                !Sub ${Service}DeployerRoleArn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Ref BuildSpecPath
+      TimeoutInMinutes: 10
+      QueuedTimeoutInMinutes: 10
+      Tags:
+        - Key: Service
+          Value: !Ref Service
+        - Key: Team
+          Value: !Ref Team
+
+  DefaultCodepipelineWebhook:
+    Type: 'AWS::CodePipeline::Webhook'
+    Properties:
+      Name: !Sub ${Service}CodePipelineWebhook
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: !Ref GitHubSecret
+      Filters:
+        - JsonPath: "$.ref"
+          MatchEquals: refs/heads/{Branch}
+      TargetPipeline: !Ref DefaultCodePipeline
+      TargetAction: SourceAction
+      TargetPipelineVersion: !GetAtt DefaultCodePipeline.Version
+      RegisterWithThirdParty: true
+
+  DefaultCodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub ${Service}
+      RoleArn: !ImportValue SecurityCodePipelineRoleArn
+      Stages:
+        - Name: GitHubSource
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              Configuration:
+                Owner: !Ref GitHubOwner
+                Repo: !Ref RepositoryName
+                Branch: !Ref BranchName
+                OAuthToken: !Ref GitHubOAuthToken
+                PollForSourceChanges: false
+              OutputArtifacts:
+                - Name: sArtifact
+              RunOrder: 1
+        - Name: CodeBuild
+          Actions:
+            - Name: BuildAction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Sub ${Service}
+              InputArtifacts:
+                - Name: sArtifact
+              OutputArtifacts:
+                - Name: bArtifact
+              RunOrder: 1
+      ArtifactStore:
+        Type: S3
+        Location: !ImportValue SecurityDeploymentBucketName
+    DependsOn:
+      - DefaultCodeBuild
+
+Parameters:
+  Service:
+    Description: Name of the service you are deploying, name will be used to reference in IAM role and policy
+    Type: String
+
+  Team:
+    Description: The team that owns this service
+    Type: String
+    AllowedPattern: ^[a-zA-Z0-9]*$
+
+  BranchName:
+    Description: GitHub branch name
+    Type: String
+    Default: master
+  RepositoryName:
+    Description: GitHub repository name
+    Type: String
+    Default: sec_mfasupervisor
+  GitHubOwner:
+    Description: Matson Org Account
+    Type: String
+    Default: MatsonInc
+  GitHubSecret:
+    Description: Password of the user who creates the OAuth token
+    Type: String
+    NoEcho: true
+  GitHubOAuthToken:
+    Description: |+
+      Create an OAuth token following this link ***https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line***
+
+      1. Only select `repo`. This will give full control of private repositories, which CodePipeline will use to poll private repositories
+
+      2. After generating OAuth token, `Enable SSO` and `Authorize` to access MatsonInc on that specific token
+    Type: String
+    NoEcho: true
+
+  BuildSpecPath:
+    Description: By default, CodeBuild looks for a file named buildspec.yml in the source code root directory. If your buildspec file uses a different name or location, enter its path from the source root here (for example, buildspec-two.yml or configuration/buildspec.yml).
+    Type: String
+    Default: buildspec.yml
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Tags
+        Parameters:
+          - Team
+      - Label:
+          default: Github
+        Parameters:
+          - Service
+          - BranchName
+          - RepositoryName
+          - GitHubOwner
+          - GitHubSecret
+          - GitHubOAuthToken
+      - Label:
+          default: Build
+        Parameters:
+          - BuildSpecPath
+
+    ParameterLabels:
+      Service:
+        default: Service Name
+      BranchName:
+        default: Branch Name
+      RepositoryName:
+        default: Repository Name
+      GitHubOwner:
+        default: GitHub Owner
+      GitHubSecret:
+        default: GitHub Secret
+      GitHubOAuthToken:
+        default: GitHub OAuth Token
+      BuildSpecPath:
+        default: Codebuild
+
+# Outputs:
+#   CodeBuildRoleArn:
+#     Description: The arn value of the role for the codebuild
+#     Value: !GetAtt CodeBuildRole.Arn
+#     Export:
+#       Name: !Sub ${Service}CodeBuildRoleArn
+
+#   ServiceDeployerRoleArn:
+#     Description: The arn value of deploy role used by the serverless framework
+#     Value: !GetAtt ServiceDeployerRole.Arn
+#     Export:
+#       Name: !Sub ${Service}DeployerRoleArn
+
+#   CodePipelineRoleArn:
+#     Description: The arn value of deploy role for a pipeline
+#     Value: !GetAtt CodePipelineRole.Arn
+#     Export:
+#       Name: !Sub ${Service}pipelineRoleArn

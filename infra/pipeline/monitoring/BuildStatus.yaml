@@ -1,0 +1,36 @@
+Resources:
+  EventRule: 
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: "EventRule"
+      EventPattern: 
+        source: 
+          - "aws.codebuild"
+        detail-type: 
+          - "CodeBuild Build State Change"
+        detail: 
+          build-status:
+            - SUCCEEDED
+            - FAILED
+          project-name:
+              - !Sub ${Service}
+      State: "ENABLED"
+      Targets: 
+        - 
+          Arn: !ImportValue buildStatusShortArn
+          Id: !Select [7, !Split [":", !ImportValue buildStatusArn]]
+  PermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !ImportValue buildStatusName
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "EventRule"
+          - "Arn"
+
+Parameters:
+  Service:
+    Description: Name of the service you are deploying, name will be used to reference in IAM role and policy
+    Type: String

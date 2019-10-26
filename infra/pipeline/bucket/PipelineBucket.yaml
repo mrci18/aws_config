@@ -1,0 +1,76 @@
+#Ran before pipeline
+Resources:
+  CodePipelineBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub security-deployment-artifacts-${StageParameter}
+      PublicAccessBlockConfiguration:
+        RestrictPublicBuckets: true
+
+  CodePipelineBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref CodePipelineBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: DenyUnEncryptedObjectUploads
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:PutObject'
+            Resource: !Join
+              - ''
+              - - !GetAtt
+                  - CodePipelineBucket
+                  - Arn
+                - /*
+            Condition:
+              StringNotEquals:
+                's3:x-amz-server-side-encryption': 'aws:kms'
+          - Sid: DenyInsecureConnections
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: !Join
+              - ''
+              - - !GetAtt
+                  - CodePipelineBucket
+                  - Arn
+                - /*
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+                
+Parameters:
+  StageParameter:
+    Description: Enter stage environment you are creating resource for. Default is matsonlabs
+    Type: String
+    Default: matsonlabs
+    AllowedValues:
+      - mlscDev
+      - mlscPreprod
+      - mlscProd
+      - mdaas
+      - infosec
+      - matsonlabs
+      - qa
+      - dr
+      - org
+      - china
+      - workspaces
+      - dev
+      - pp
+      - prod
+
+Outputs:
+  ArtifactStoreS3:
+    Description: The s3 bucket for codepipeline artifact stores
+    Value: !Ref CodePipelineBucket
+    Export:
+      Name: SecurityDeploymentBucketName
+
+  ArtifactStoreArn:
+    Description: The arn value of the s3 bucket
+    Value: !GetAtt CodePipelineBucket.Arn
+    Export:
+      Name: SecurityDeploymentBucketArn
