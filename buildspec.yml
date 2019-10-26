@@ -18,7 +18,7 @@ phases:
 
   build:
     commands:
-      - role=$(aws sts assume-role --role-arn ${DEPLOYERARN} --role-session-name config-deployer-session --duration-seconds 900)
+      - role=$(aws sts assume-role --role-arn ${MONITORDEPLOYERARN} --role-session-name monitor-deployer-session --duration-seconds 900)
       - KEY=$(echo $role |awk '{print $5}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
       - SECRET=$(echo $role |awk '{print $7}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
       - TOKEN=$(echo $role |awk '{print $9}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
