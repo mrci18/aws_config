@@ -60,7 +60,6 @@ Resources:
               - lambda:UntagResource
             Resource:
               - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Service}*
-              - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:buildStatus*
           - Sid: IAM
             Effect: Allow
             Action:
@@ -95,8 +94,6 @@ Resources:
             Resource:
               - !Sub arn:aws:iam::${AWS::AccountId}:policy/${Service}*
               - !Sub arn:aws:iam::${AWS::AccountId}:role/${Service}*
-              - !Sub arn:aws:iam::${AWS::AccountId}:policy/buildStatus*
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/buildStatus*
           - Sid: Logs
             Effect: Allow
             Action:
@@ -108,9 +105,7 @@ Resources:
               - logs:FilterLogEvents
             Resource: 
               - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${Service}*:*:*
-              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/buildStatus*:*:*
               - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${Service}*:*:*
-              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/buildStatus*:*:*
           - Sid: S3
             Effect: Allow
             Action:
@@ -132,9 +127,7 @@ Resources:
               - s3:PutObjectTagging
               - s3:PutAnalyticsConfiguration
               - s3:ReplicateTags
-            Resource: 
-              - !Sub arn:aws:s3:::${Service}*
-              - !Sub arn:aws:s3:::buildstatus*
+            Resource: !Sub arn:aws:s3:::${Service}*
           - Sid: AllowAllResources
             Effect: Allow
             Action:
@@ -154,9 +147,7 @@ Resources:
               - events:RemoveTargets
               - events:TagResource
               - events:UntagResource
-            Resource: 
-              - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${Service}*
-              - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/buildStatus*
+            Resource: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${Service}*
           - Sid: EventsAll
             Effect: Allow
             Action:
@@ -206,9 +197,7 @@ Resources:
               - cloudformation:GetTemplate
               - cloudformation:DeleteStack
               - cloudformation:ListChangeSets
-            Resource: 
-              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${Service}*/*
-              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/buildStatus*/*
+            Resource: !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${Service}*/*
           - Sid: AllowResources
             Effect: Allow
             Action:

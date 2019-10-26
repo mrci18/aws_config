@@ -130,7 +130,7 @@ Resources:
               - s3:PutObjectTagging
               - s3:PutAnalyticsConfiguration
               - s3:ReplicateTags
-            Resource: arn:aws:s3:::buildStatus*
+            Resource: arn:aws:s3:::buildstatus*
           - Sid: AllowAllResources
             Effect: Allow
             Action:
