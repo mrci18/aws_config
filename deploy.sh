@@ -54,7 +54,7 @@ function deploy_pipeline_bucket(){
 }
 # deploy PipelineRole
 function deploy_pipeline_role(){
-    echo -e "\n\nDeploying Pipeline Role..."
+    echo -e "\n\nDeploying CodePipeline Role..."
     aws cloudformation deploy \
         --no-fail-on-empty-changeset \
         --template-file infra/pipeline/iam/CodePipelineRole.yaml \
@@ -63,16 +63,25 @@ function deploy_pipeline_role(){
 }
 # Deploy Codebuilld Role
 function deploy_build_role(){
-    echo -e "\n\nDeploying Pipeline Role..."
+    echo -e "\n\nDeploying CodeBuild Role..."
     aws cloudformation deploy \
         --no-fail-on-empty-changeset \
         --template-file infra/pipeline/iam/CodeBuildRole.yaml \
         --stack-name CodeBuildRoleStack \
         --capabilities CAPABILITY_NAMED_IAM
 }
+# Deploy Monitor Deployer Role
+function deploy_monitor_deployer(){
+    echo -e "\n\nDeploying Monitor Deployer Role..."
+    aws cloudformation deploy \
+        --no-fail-on-empty-changeset \
+        --template-file monitoring/MonitorDeployerRole.yaml \
+        --stack-name MonitorDeployerStack \
+        --capabilities CAPABILITY_NAMED_IAM
+}
 # Deploy Service Role
 function deploy_service_deployer(){
-    echo -e "\n\nDeploying Pipeline Role..."
+    echo -e "\n\nDeploying ${service} Deployer Role..."
     aws cloudformation deploy \
         --no-fail-on-empty-changeset \
         --template-file infra/pipeline/iam/DeployerRole.yaml \
@@ -83,7 +92,7 @@ function deploy_service_deployer(){
 }
 # Deploy Pipeline
 function deploy_pipeline(){
-    echo -e "\n\nDeploying Pipeline Role..."
+    echo -e "\n\nDeploying Pipeline..."
     aws cloudformation deploy \
         --no-fail-on-empty-changeset \
         --template-file infra/pipeline/Pipeline.yaml \
@@ -105,8 +114,9 @@ function deploy_pipeline(){
 deploy_pipeline_bucket
 deploy_pipeline_role
 deploy_build_role
+deploy_monitor_deployer
 deploy_service_deployer
-deploy_pipeline
+# deploy_pipeline
 # SLS deploy monitoring
 # deploy cloudwatch event
 # sls deploy tag for termination
