@@ -27,7 +27,7 @@ phases:
       - export AWS_SECRET_ACCESS_KEY=$SECRET
       - export AWS_DEFAULT_REGION=us-west-2
       - echo "SLS Deploy"
-      # - cd ${rootDir}/monitoring && npm install && sls deploy
+      - cd ${rootDir}/monitoring && npm install && sls deploy
       # - cd ${rootDir}/infra/pipeline/monitoring && aws cloudformation deploy --no-fail-on-empty-changeset --template-file./BuildStatus.yaml --stack-name BuildStatusCWEvent --parameter-overrides Service=securityConfig
       # - cd ${rootDir}/tag_for_termination && npm install && sls deploy
       # - cd ${rootDir}/tag_for_termination && aws cloudformation deploy -template-file ./config.yaml --stack-name TagForTerminationConfig
