@@ -114,7 +114,7 @@ function deploy_pipeline(){
 deploy_pipeline_bucket
 deploy_pipeline_role
 deploy_build_role
-deploy_monitor_deployer
+# deploy_monitor_deployer
 deploy_service_deployer
 # deploy_pipeline
 # SLS deploy monitoring

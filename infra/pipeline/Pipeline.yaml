@@ -14,6 +14,10 @@ Resources:
         EnvironmentVariables:
           - Name: SERVICE
             Value: !Ref Service
+          - Name: MONITORDEPLOYERARN
+            Value: 
+              Fn::ImportValue: 
+                !Sub ${Service}DeployerRoleArn
           - Name: DEPLOYERARN
             Value: 
               Fn::ImportValue: 
