@@ -134,7 +134,7 @@ Resources:
               - s3:ReplicateTags
             Resource: 
               - !Sub arn:aws:s3:::${Service}*
-              - !Sub arn:aws:s3:::buildStatus*
+              - !Sub arn:aws:s3:::buildstatus*
           - Sid: AllowAllResources
             Effect: Allow
             Action:
