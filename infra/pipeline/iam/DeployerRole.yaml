@@ -206,7 +206,6 @@ Resources:
               - cloudformation:GetTemplate
               - cloudformation:DeleteStack
               - cloudformation:ListChangeSets
-              
             Resource: 
               - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${Service}*/*
               - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/buildStatus*/*
