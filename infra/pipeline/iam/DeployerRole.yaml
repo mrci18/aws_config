@@ -134,7 +134,7 @@ Resources:
               - s3:PutObjectTagging
               - s3:PutAnalyticsConfiguration
               - s3:ReplicateTags
-            Resource: !Sub arn:aws:s3:::${Service}*
+            Resource: !Sub arn:aws:s3:::awsconfig*
           - Sid: AllowAllResources
             Effect: Allow
             Action:
