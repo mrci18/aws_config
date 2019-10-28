@@ -71,7 +71,7 @@ function deploy_build_role(){
         --capabilities CAPABILITY_NAMED_IAM
 }
 # Deploy Monitor Deployer Role
-function deploy_monitor_deployer(){
+function deploy_monitor_deployer_role(){
     echo -e "\n\nDeploying Monitor Deployer Role..."
     aws cloudformation deploy \
         --no-fail-on-empty-changeset \
@@ -80,7 +80,7 @@ function deploy_monitor_deployer(){
         --capabilities CAPABILITY_NAMED_IAM
 }
 # Deploy Service Role
-function deploy_service_deployer(){
+function deploy_service_deployer_role(){
     echo -e "\n\nDeploying ${service} Deployer Role..."
     aws cloudformation deploy \
         --no-fail-on-empty-changeset \
@@ -114,9 +114,9 @@ function deploy_pipeline(){
 deploy_pipeline_bucket
 deploy_pipeline_role
 deploy_build_role
-deploy_monitor_deployer
-deploy_service_deployer
-# deploy_pipeline
+deploy_monitor_deployer_role
+deploy_service_deployer_role
+deploy_pipeline
 # SLS deploy monitoring
 # deploy cloudwatch event
 # sls deploy tag for termination
