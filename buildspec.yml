@@ -36,7 +36,7 @@ phases:
       - export AWS_ACCESS_KEY_ID=$KEY2 && export AWS_SESSION_TOKEN=$TOKEN2 && export AWS_SECRET_ACCESS_KEY=$SECRET2
       - cd ${rootDir}/infra/pipeline/monitoring && aws cloudformation deploy --no-fail-on-empty-changeset --template-file ./BuildStatus.yaml --stack-name ${SERVICE}BuildStatusCWEvent --parameter-overrides Service=${SERVICE}      
       - cd ${rootDir}/tag_for_termination && npm install && sls deploy
-      - cd ${rootDir}/tag_for_termination && aws cloudformation deploy --no-fail-on-empty-changeset -template-file ./config.yaml --stack-name ${SERVICE}TagForTermination
+      - cd ${rootDir}/tag_for_termination && aws cloudformation deploy --no-fail-on-empty-changeset --template-file ./config.yaml --stack-name ${SERVICE}TagForTermination
 
   post_build:
     commands:
