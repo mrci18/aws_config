@@ -28,7 +28,7 @@ phases:
       - export AWS_DEFAULT_REGION=us-west-2
       - echo "Deploying monitoring section..."
       - cd ${rootDir}/monitoring && npm install && sls deploy
-      - cd ${rootDir}/infra/pipeline/monitoring && aws cloudformation deploy --no-fail-on-empty-changeset --template-file./BuildStatus.yaml --stack-name BuildStatusCWEvent --parameter-overrides Service=AWSConfig
+      - cd ${rootDir}/infra/pipeline/monitoring && aws cloudformation deploy --no-fail-on-empty-changeset --template-file ./BuildStatus.yaml --stack-name BuildStatusCWEvent --parameter-overrides Service=AWSConfig
       - echo "Deploying AWSConfig section..."
       - role2=$(aws sts assume-role --role-arn ${DEPLOYERARN} --role-session-name deployer-session --duration-seconds 900)
       - KEY2=$(echo $role |awk '{print $5}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
