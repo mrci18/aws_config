@@ -22,20 +22,18 @@ phases:
       - KEY=$(echo $role |awk '{print $5}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
       - SECRET=$(echo $role |awk '{print $7}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
       - TOKEN=$(echo $role |awk '{print $9}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
-      - export AWS_ACCESS_KEY_ID=$KEY
-      - export AWS_SESSION_TOKEN=$TOKEN
-      - export AWS_SECRET_ACCESS_KEY=$SECRET
+      - export AWS_ACCESS_KEY_ID=$KEY && export AWS_SESSION_TOKEN=$TOKEN && export AWS_SECRET_ACCESS_KEY=$SECRET
       - export AWS_DEFAULT_REGION=us-west-2
       - echo "Deploying monitoring section..."
       - cd ${rootDir}/monitoring && npm install && sls deploy
+      - echo "Removing sts token..."
+      - export AWS_ACCESS_KEY_ID="" && export AWS_SESSION_TOKEN="" && export AWS_SECRET_ACCESS_KEY=""
       - echo "Deploying ${SERVICE} section..."
       - role2=$(aws sts assume-role --role-arn ${DEPLOYERARN} --role-session-name deployer-session --duration-seconds 900)
       - KEY2=$(echo $role |awk '{print $5}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
       - SECRET2=$(echo $role |awk '{print $7}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
       - TOKEN2=$(echo $role |awk '{print $9}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
-      - export AWS_ACCESS_KEY_ID=$KEY2
-      - export AWS_SESSION_TOKEN=$TOKEN2
-      - export AWS_SECRET_ACCESS_KEY=$SECRET2
+      - export AWS_ACCESS_KEY_ID=$KEY2 && export AWS_SESSION_TOKEN=$TOKEN2 && export AWS_SECRET_ACCESS_KEY=$SECRET2
       - cd ${rootDir}/infra/pipeline/monitoring && aws cloudformation deploy --no-fail-on-empty-changeset --template-file ./BuildStatus.yaml --stack-name ${SERVICE}BuildStatusCWEvent --parameter-overrides Service=${SERVICE}      
       - cd ${rootDir}/tag_for_termination && npm install && sls deploy
       - cd ${rootDir}/tag_for_termination && aws cloudformation deploy --no-fail-on-empty-changeset -template-file ./config.yaml --stack-name ${SERVICE}TagForTerminationConfig
