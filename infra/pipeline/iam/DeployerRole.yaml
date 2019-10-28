@@ -223,6 +223,20 @@ Resources:
               - cloudformation:ValidateTemplate
             Resource: "*"
 
+  PutConfigPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: 'PutConfigPolicy'
+      Roles: [{Ref: "ServiceDeployerRole"}]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PutConfigRule
+            Effect: Allow
+            Action:
+              - config:PutConfigRule
+            Resource: !Sub arn:aws:config:${AWS::Region}:${AWS::AccountId}:config-rule/*
+
 Parameters:
   Service:
     Description: Name of the service you are deploying, name will be used to reference in IAM role and policy
