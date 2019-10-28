@@ -26,6 +26,7 @@
 
 # Init config
 service="AWSConfig"
+lservice=${service,,}
 message="INFO: You are about to input sensitive data; your input will not be echo'd back to the terminal"
 team="Security"
 
@@ -61,24 +62,17 @@ function deploy_pipeline_role(){
         --stack-name CodePipelineRoleStack \
         --capabilities CAPABILITY_NAMED_IAM
 }
-# Deploy Codebuilld Role
-function deploy_build_role(){
-    echo -e "\n\nDeploying CodeBuild Role..."
+
+# deploy CFT with no parameters
+function deploy_regular_cft(){
+    echo -e "\n\nDeploying ${1}..."
     aws cloudformation deploy \
         --no-fail-on-empty-changeset \
-        --template-file infra/pipeline/iam/CodeBuildRole.yaml \
-        --stack-name CodeBuildRoleStack \
+        --template-file ${2} \
+        --stack-name ${1} \
         --capabilities CAPABILITY_NAMED_IAM
 }
-# Deploy Monitor Deployer Role
-function deploy_monitor_deployer_role(){
-    echo -e "\n\nDeploying Monitor Deployer Role..."
-    aws cloudformation deploy \
-        --no-fail-on-empty-changeset \
-        --template-file monitoring/MonitorDeployerRole.yaml \
-        --stack-name MonitorDeployerStack \
-        --capabilities CAPABILITY_NAMED_IAM
-}
+
 # Deploy Service Role
 function deploy_service_deployer_role(){
     echo -e "\n\nDeploying ${service} Deployer Role..."
@@ -88,6 +82,7 @@ function deploy_service_deployer_role(){
         --stack-name ${service}DeployerStack \
         --parameter-overrides \
             Service=${service} \
+            LService=${lservice} \
         --capabilities CAPABILITY_NAMED_IAM
 }
 # Deploy Pipeline
@@ -111,12 +106,16 @@ function deploy_pipeline(){
     echo -e "Wait until script is fully finished executing..."
 }
 
+### Main ###
+# Place keys in this directory
+deploy_kms AWSErrorKey ./security_errors_key.yaml
+deploy_kms SecurityDeploymentKey ./security_deployment_key.yaml
 deploy_pipeline_bucket
-deploy_pipeline_role
-deploy_build_role
-deploy_monitor_deployer_role
-deploy_service_deployer_role
-deploy_pipeline
+deploy_regular_cft CodePipelineRoleStack infra/pipeline/iam/CodePipelineRole.yaml
+deploy_regular_cft CodeBuildRoleStack infra/pipeline/iam/CodeBuildRole.yaml
+deploy_regular_cft MonitorDeployerStack monitoring/MonitorDeployerRole.yaml
+# deploy_service_deployer_role 
+# deploy_pipeline
 # SLS deploy monitoring
 # deploy cloudwatch event
 # sls deploy tag for termination

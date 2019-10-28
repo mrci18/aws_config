@@ -134,7 +134,7 @@ Resources:
               - s3:PutObjectTagging
               - s3:PutAnalyticsConfiguration
               - s3:ReplicateTags
-            Resource: !Sub arn:aws:s3:::awsconfig*
+            Resource: !Sub arn:aws:s3:::${LService}*
           - Sid: AllowAllResources
             Effect: Allow
             Action:
@@ -241,6 +241,11 @@ Parameters:
   Service:
     Description: Name of the service you are deploying, name will be used to reference in IAM role and policy
     Type: String
+
+  LService:
+    Description: Name of the service you are deploying, but lower in lowercase
+    Type: String
+    AllowedPattern: ^[a-z0-9]*$
 
 Outputs:
   ServiceDeployerRoleArn:
