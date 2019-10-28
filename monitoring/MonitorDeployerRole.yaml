@@ -60,7 +60,6 @@ Resources:
               - lambda:UntagResource
             Resource:
               - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:buildStatus*
-              - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:buildStatus*
           - Sid: IAM
             Effect: Allow
             Action:
@@ -95,7 +94,6 @@ Resources:
             Resource:
               - !Sub arn:aws:iam::${AWS::AccountId}:policy/buildStatus*
               - !Sub arn:aws:iam::${AWS::AccountId}:role/buildStatus*
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/buildStatus*
           - Sid: Logs
             Effect: Allow
             Action:
@@ -107,7 +105,6 @@ Resources:
               - logs:FilterLogEvents
             Resource: 
               - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/buildStatus*:*:*
-              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/buildStatus*:*:*
               - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/buildStatus*:*:*
           - Sid: S3
             Effect: Allow
@@ -200,6 +197,11 @@ Resources:
               - cloudformation:GetTemplate
               - cloudformation:DeleteStack
               - cloudformation:ListChangeSets
+              - cloudformation:CreateChangeSet
+              - cloudformation:DeleteChangeSet
+              - cloudformation:DescribeChangeSet
+              - cloudformation:ExecuteChangeSet
+              - cloudformation:ValidateTemplate
             Resource: !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/buildStatus*/*
           - Sid: AllowResources
             Effect: Allow

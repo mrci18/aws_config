@@ -60,6 +60,13 @@ Resources:
               - lambda:UntagResource
             Resource:
               - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Service}*
+          - Sid: LambdaPermissionBuildStatus
+            Effect: Allow
+            Action:
+              - lambda:AddPermission
+              - lambda:RemovePermission
+            Resource: 
+              - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:buildStatus*
           - Sid: IAM
             Effect: Allow
             Action:
