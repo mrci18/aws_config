@@ -1,48 +1,21 @@
 #!/bin/bash
-# serviceName="config"
-# read -p "Enter stage: " stage
-
-# export SERVICE=${serviceName}
-# export ACCOUNT_ALIAS=$(aws iam list-account-aliases --query "AccountAliases[]" --output text)
-# export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query 'Account')
-
 # "C:\Users\cibo\AppData\Roaming\npm\serverless" deploy --stage ${stage}
 
-# aws cloudformation deploy \
-#     --template-file ./config.yaml \
-#     --stack-name ${serviceName}TagSgStack
+function deploy_kms(){
+    echo -e "\n\nDeploying ${1}..."
+    aws cloudformation deploy \
+        --template-file ${2} \
+        --stack-name ${1} \
+        --parameter-overrides \
+            Team=${team} User=${username}
+}
 
-#Create KMS key for SECURITY_DEPLOYMENT_SLACK SSM 
-#Create KMS key for SECURITY_ERRORS_SLACK SSM
+function set_secure_ssm(){
+    kmsID=$(aws cloudformation describe-stacks --stack-name ${3} --query "Stacks[].Outputs[].OutputValue[]" --output text | awk '{print $2}')
+    echo -e "\nSetting SSM for ${1}"
 
-
-#Set SSM Paramter for aws-erros webhook as SECURITY_ERRORS_SLACK
-#Set SSM Paramtere for security-deployments webhook SECURITY_DEPLOYMENT_SLACK
-
-
-
-#Inputs
-# read -p "Stage/Account (e.g. mlscDev, mlscPreprod, mlscProd, mdaas, infosec, matsonlabs, qa, dr, org, china, workspaces, dev, pp, prod): " stage
-
-# Init config
-service="AWSConfig"
-lservice=${service,,}
-message="INFO: You are about to input sensitive data; your input will not be echo'd back to the terminal"
-team="Security"
-
-# For pipeline config
-branch="master"
-gitOwner="mrci18"
-repo="aws_config"
-buildspec="buildspec.yml"
-
-read -p "Stage/Account (e.g. mlscDev, mlscPreprod, mlscProd, mdaas, infosec, matsonlabs, qa, dr, org, china, workspaces, dev, pp, prod): " stage
-
-echo -e "\n${message}"
-read -sp "GitHub OAuth Token (Reference the doc link above if you need help): " oAuth
-
-echo -e "\n\n${message}"
-read -sp "Github password (i.e The GitHub account password that created the OAuthToken above): " gitPassword
+    aws ssm put-parameter --cli-input-json '{"Type": "SecureString", "KeyId": "'"${kmsID}"'", "Name": "'"${1}"'", "Value": "'"${2}"'"}' --overwrite
+}
 
 # # Deploy S3 Pipeline Bucket
 function deploy_pipeline_bucket(){
@@ -53,6 +26,7 @@ function deploy_pipeline_bucket(){
         --parameter-overrides \
             StageParameter=${stage}
 }
+
 # deploy PipelineRole
 function deploy_pipeline_role(){
     echo -e "\n\nDeploying CodePipeline Role..."
@@ -79,7 +53,7 @@ function deploy_service_deployer_role(){
     aws cloudformation deploy \
         --no-fail-on-empty-changeset \
         --template-file infra/pipeline/iam/DeployerRole.yaml \
-        --stack-name ${service}DeployerStack \
+        --stack-name ${service}DeployerRoleStack \
         --parameter-overrides \
             Service=${service} \
             LService=${lservice} \
@@ -106,16 +80,51 @@ function deploy_pipeline(){
     echo -e "Wait until script is fully finished executing..."
 }
 
+#Inputs
+read -p "Stage/Account (e.g. mlscDev, mlscPreprod, mlscProd, mdaas, infosec, matsonlabs, qa, dr, org, china, workspaces, dev, pp, prod): " stage
+read -p "AWS username running this script (e.g. bob@matson.com): " username
+
+# Init config
+service="AWSConfig"
+lservice=${service,,} # Lowercase for S3 IAM permissions, bucket cannot be created if it has upper 
+message="INFO: You are about to input sensitive data; your input will not be echo'd back to the terminal"
+team="Security"
+
+# Slack config
+slack_error=$(echo SECURITY_ERRORS_SLACK)
+echo -e "\n${message}"
+read -sp "The webhook URL from slack for errors: " error_webhook
+
+slack_deployment=$(echo SECURITY_DEPLOYMENT_SLACK)
+echo -e "\n\n${message}"
+read -sp "The webhook URL from slack for security deployment channel: " deployment_webhook
+
+# For pipeline config
+branch="master"
+gitOwner="mrci18"
+repo="aws_config"
+buildspec="buildspec.yml"
+
+# read -p "Stage/Account (e.g. mlscDev, mlscPreprod, mlscProd, mdaas, infosec, matsonlabs, qa, dr, org, china, workspaces, dev, pp, prod): " stage
+
+echo -e "\n${message}"
+read -sp "GitHub OAuth Token (Reference the doc link above if you need help): " oAuth
+
+echo -e "\n\n${message}"
+read -sp "Github password (i.e The GitHub account password that created the OAuthToken above): " gitPassword
+
 ### Main ###
 # Place keys in this directory
-deploy_kms AWSErrorKey ./security_errors_key.yaml
-deploy_kms SecurityDeploymentKey ./security_deployment_key.yaml
-deploy_pipeline_bucket
-deploy_regular_cft CodePipelineRoleStack infra/pipeline/iam/CodePipelineRole.yaml
-deploy_regular_cft CodeBuildRoleStack infra/pipeline/iam/CodeBuildRole.yaml
-deploy_regular_cft MonitorDeployerStack monitoring/MonitorDeployerRole.yaml
+# deploy_kms AWSErrorKeyStack infra/kms/security_errors_key.yaml
+# deploy_kms SecurityDeploymentKeyStack infra/kms/security_deployment_key.yaml
+# set_secure_ssm  ${slack_error} ${error_webhook} AWSErrorKeyStack
+# set_secure_ssm  ${slack_deployment} ${deployment_webhook} SecurityDeploymentKeyStack
+# deploy_pipeline_bucket
+# deploy_regular_cft CodePipelineRoleStack infra/pipeline/iam/CodePipelineRole.yaml
+# deploy_regular_cft CodeBuildRoleStack infra/pipeline/iam/CodeBuildRole.yaml
+# deploy_regular_cft MonitorDeployerRoleStack monitoring/MonitorDeployerRole.yaml
 # deploy_service_deployer_role 
-# deploy_pipeline
+deploy_pipeline
 # SLS deploy monitoring
 # deploy cloudwatch event
 # sls deploy tag for termination
