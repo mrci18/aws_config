@@ -1,5 +1,10 @@
 version: 0.2
 
+environment_variables:
+  plaintext:
+    SLS_DEBUG: "true"
+    SLS_IGNORE_WARNING: "true"
+    
 phases:
   install:
     runtime-versions:

@@ -201,7 +201,7 @@ resources:
       Export:
         Name: tagSGTerminationArn
 
-    terminateTaggedLambdaFunctionQualifiedArn:
+    TerminateTaggedLambdaFunctionQualifiedArn:
       Export:
         Name: terminateTaggedArn
 
