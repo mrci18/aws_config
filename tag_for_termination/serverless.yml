@@ -2,12 +2,14 @@ service: ${env:SERVICE}TagSGTermination
 
 provider:
   name: aws
-  stackName: ${self:service}Stack
+  stackName: ${self:service}Lambdas
   runtime: python3.6
   memorySize: 128
   timeout: 180
   # stage: prod
   region: us-west-2
+  deploymentBucket:
+    name: security-deployment-artifacts-prod
 
 package:
   individually: true
