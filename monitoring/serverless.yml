@@ -28,6 +28,8 @@ provider:
   environment:
     MESSAGE: ${self:custom.environment.MESSAGE.${self:custom.stage}}
   region: us-west-2
+  deploymentBucket:
+    name: security-deployment-artifacts-prod
 
 package:
   individually: true
