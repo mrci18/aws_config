@@ -1,15 +1,18 @@
 service: ${env:SERVICE}TagSGTermination
 
+custom:
+  stage: ${opt:stage, 'matsonlabs'}
+
 provider:
   name: aws
   stackName: ${self:service}Lambdas
   runtime: python3.6
   memorySize: 128
   timeout: 180
-  # stage: prod
+  stage: ${self:custom.stage}
   region: us-west-2
   deploymentBucket:
-    name: security-deployment-artifacts-prod
+    name: security-deployment-artifacts-${self:provider.stage}
 
 package:
   individually: true

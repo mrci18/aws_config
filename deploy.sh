@@ -68,6 +68,7 @@ function deploy_pipeline(){
         --stack-name ${service}PipelineStack \
         --parameter-overrides \
             Service=${service} \
+            Stage=${stage} \
             Team=${team} \
             BranchName=${branch} \
             RepositoryName=${repo} \
@@ -119,11 +120,11 @@ read -sp "Github password (i.e The GitHub account password that created the OAut
 # deploy_kms SecurityDeploymentKeyStack infra/kms/security_deployment_key.yaml
 # set_secure_ssm  ${slack_error} ${error_webhook} AWSErrorKeyStack
 # set_secure_ssm  ${slack_deployment} ${deployment_webhook} SecurityDeploymentKeyStack
-# deploy_pipeline_bucket
-# deploy_regular_cft CodePipelineRoleStack infra/pipeline/iam/CodePipelineRole.yaml
-# deploy_regular_cft CodeBuildRoleStack infra/pipeline/iam/CodeBuildRole.yaml
-# deploy_regular_cft MonitorDeployerRoleStack monitoring/MonitorDeployerRole.yaml
-# deploy_service_deployer_role 
+deploy_pipeline_bucket
+deploy_regular_cft CodePipelineRoleStack infra/pipeline/iam/CodePipelineRole.yaml
+deploy_regular_cft CodeBuildRoleStack infra/pipeline/iam/CodeBuildRole.yaml
+deploy_regular_cft MonitorDeployerRoleStack monitoring/MonitorDeployerRole.yaml
+deploy_service_deployer_role 
 deploy_pipeline
 # SLS deploy monitoring
 # deploy cloudwatch event

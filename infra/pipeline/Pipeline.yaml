@@ -14,6 +14,8 @@ Resources:
         EnvironmentVariables:
           - Name: SERVICE
             Value: !Ref Service
+          - Name: STAGE
+            Value: !Ref Stage
           - Name: DEPLOYERARN
             Value: 
               Fn::ImportValue: 
@@ -95,6 +97,10 @@ Parameters:
     Description: Name of the service you are deploying, name will be used to reference in IAM role and policy
     Type: String
 
+  Stage:
+    Description: Enter stage environment you are creating resource for. Default is matsonlabs
+    Type: String
+
   Team:
     Description: The team that owns this service
     Type: String
@@ -142,6 +148,7 @@ Metadata:
           default: Github
         Parameters:
           - Service
+          - Stage
           - BranchName
           - RepositoryName
           - GitHubOwner
@@ -155,6 +162,8 @@ Metadata:
     ParameterLabels:
       Service:
         default: Service Name
+      Stage:
+        default: Release Stage
       BranchName:
         default: Branch Name
       RepositoryName:
