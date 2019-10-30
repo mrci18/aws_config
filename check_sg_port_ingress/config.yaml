@@ -1,0 +1,24 @@
+Resources:
+  ConfigPermissionToCallLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !ImportValue checkSGPortIngressArn
+      Action: "lambda:InvokeFunction"
+      Principal: "config.amazonaws.com"
+  ConfigRuleForUnattachedSecurityGroups: 
+    Type: AWS::Config::ConfigRule
+    Properties: 
+      ConfigRuleName: !Sub ${Service}ForUnattachedSecurityGroups
+      Source: 
+        Owner: "CUSTOM_LAMBDA"
+        SourceDetails: 
+          - 
+            EventSource: "aws.config"
+            MaximumExecutionFrequency: "TwentyFour_Hours"
+            MessageType: "ScheduledNotification"
+        SourceIdentifier: !ImportValue tagSgForTerminationArn
+
+Parameters:
+  Service:
+    Description: Name of the service you are deploying, name will be used to reference in IAM role and policy
+    Type: String

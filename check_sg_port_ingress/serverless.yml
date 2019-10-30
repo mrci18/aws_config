@@ -1,0 +1,121 @@
+service: ${env:SERVICE}CheckSGPortIngress
+
+provider:
+  name: aws
+  stackName: ${self:service}Stack
+  runtime: python3.6
+  memorySize: 128
+  timeout: 180
+  # stage: prod
+  region: us-west-2
+
+package:
+  individually: true
+  exclude:
+    - "**/*"  # quotes(") are needed
+
+functions:
+  checkSGPortIngress:
+    handler: check_sg_port_ingress.lambda_handler
+    package:
+      include:
+        - "check_sg_port_ingress.py"
+        - "slack_alert.py"
+    name: ${self:service}_check_sg_port_ingress
+    role: CheckRole
+    environment:
+      SERVICE: ${self:service}
+      REGION: ${self:provider.region}
+      ACCOUNT_ALIAS: ${env:ACCOUNT_ALIAS}
+
+resources:
+  Resources:
+# Permissions for check_sg_port_ingress.py
+    CheckRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        RoleName: ${self:functions.checkSGPortIngress.name}LambdaRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+    CheckDefaultPolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: ${self:functions.checkSGPortIngress.name}LambdaPolicy
+        Roles:
+          - Ref: "CheckRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: CreateLogStream
+              Effect: Allow
+              Action:
+                - logs:CreateLogStream
+              Resource:
+                - arn:aws:logs:${self:provider.region}:${env:ACCOUNT_ID}:log-group:/aws/lambda/${self:functions.checkSGPortIngress.name}:*
+            - Sid: PutLogEvents
+              Effect: Allow
+              Action:
+                - logs:PutLogEvents
+              Resource:
+                - arn:aws:logs:${self:provider.region}:${env:ACCOUNT_ID}:log-group:/aws/lambda/${self:functions.checkSGPortIngress.name}:*:*
+      DependsOn:
+        - CheckRole
+
+    CheckPolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: ${self:functions.checkSGPortIngress.name}LambdaExecutionPolicy
+        Roles:
+          - Ref: "CheckRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: CheckExecution
+              Effect: Allow
+              Action:
+                - ec2:DescribeTags
+                - ec2:DescribeSecurityGroups
+                - ec2:AuthorizeSecurityGroupIngress
+                - ec2:RevokeSecurityGroupIngress
+                - config:PutEvaluations
+              Resource: "*"
+      DependsOn:
+        - CheckRole
+
+# KMS and SSM for slack alerts, used by both
+    DefaultKMSPolicy:
+      Type: 'AWS::IAM::Policy'
+      Properties:
+        PolicyName: ${self:service}DecryptSSMPolicy
+        Roles:
+          - Ref: "CheckRole"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: AllowDecryptSSM
+              Effect: Allow
+              Action:
+                - kms:Decrypt
+                - kms:Encrypt
+                - kms:GenerateDataKey
+                - ssm:GetParameters
+              Resource:
+                - Fn::ImportValue: SecurityErrorsKMSKeyArn
+                - arn:aws:ssm:${self:provider.region}:${env:ACCOUNT_ID}:parameter/SECURITY_ERRORS*
+      DependsOn:
+        - CheckRole
+
+  Outputs:
+    checkSGPortIngressLambdaFunctionQualifiedArn:
+      Export:
+        Name: checkSGPortIngressArn
+
+    ServerlessDeploymentBucketName:
+      Export:
+        Name: configServerlessBucket
