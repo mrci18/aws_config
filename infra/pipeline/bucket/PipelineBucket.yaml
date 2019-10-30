@@ -42,10 +42,10 @@ Outputs:
     Description: The s3 bucket for codepipeline artifact stores
     Value: !Ref CodePipelineBucket
     Export:
-      Name: SecurityDeploymentBucketNamex
+      Name: SecurityDeploymentBucketName
 
   ArtifactStoreArn:
     Description: The arn value of the s3 bucket
     Value: !GetAtt CodePipelineBucket.Arn
     Export:
-      Name: SecurityDeploymentBucketArnx
+      Name: SecurityDeploymentBucketArn

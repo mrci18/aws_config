@@ -128,7 +128,11 @@ Resources:
               - s3:PutObjectTagging
               - s3:PutAnalyticsConfiguration
               - s3:ReplicateTags
-            Resource: !ImportValue SecurityDeploymentBucketArn
+            Resource: 
+              !Join
+                - ''
+                - - !ImportValue SecurityDeploymentBucketArn
+                  - '*'
           - Sid: AllowAllResources
             Effect: Allow
             Action:
