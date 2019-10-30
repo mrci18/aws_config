@@ -5,18 +5,20 @@ Resources:
       FunctionName: !ImportValue checkSGPortIngressArn
       Action: "lambda:InvokeFunction"
       Principal: "config.amazonaws.com"
-  ConfigRuleForUnattachedSecurityGroups: 
+  ConfigRuleCheckSGPortIngress: 
     Type: AWS::Config::ConfigRule
     Properties: 
-      ConfigRuleName: !Sub ${Service}ForUnattachedSecurityGroups
+      ConfigRuleName: !Sub ${Service}CheckSGPortIngress
+      Scope:
+        ComplianceResourceTypes: 
+          - "AWS::EC2::SecurityGroup"
       Source: 
         Owner: "CUSTOM_LAMBDA"
         SourceDetails: 
           - 
             EventSource: "aws.config"
-            MaximumExecutionFrequency: "TwentyFour_Hours"
-            MessageType: "ScheduledNotification"
-        SourceIdentifier: !ImportValue tagSgForTerminationArn
+            MessageType: "ConfigurationItemChangeNotification"
+        SourceIdentifier: !ImportValue checkSGPortIngressArn
 
 Parameters:
   Service:
