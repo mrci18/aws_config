@@ -1,13 +1,18 @@
 service: ${env:SERVICE}CheckSGPortIngress
 
+custom:
+  stage: ${opt:stage, 'matsonlabs'}
+
 provider:
   name: aws
   stackName: ${self:service}Stack
   runtime: python3.6
   memorySize: 128
   timeout: 180
-  # stage: prod
+  stage: ${self:custom.stage}
   region: us-west-2
+  deploymentBucket:
+    name: security-deployment-artifacts-${self:provider.stage}
 
 package:
   individually: true
@@ -115,7 +120,3 @@ resources:
     checkSGPortIngressLambdaFunctionQualifiedArn:
       Export:
         Name: checkSGPortIngressArn
-
-    ServerlessDeploymentBucketName:
-      Export:
-        Name: configServerlessBucket
