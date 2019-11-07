@@ -14,8 +14,13 @@ NON_COMPLIANT = "NON_COMPLIANT"
 NOT_APPLICABLE = "NOT_APPLICABLE"
 
 class Ec2Actions:
-    def __init__(self):
+    def __init__(self, group_id='', time_stamp='', result_token =''):
         self.client = boto3.client("ec2")
+        self.compliance_type = COMPLIANT
+        self.annotation_message = "Permissions are correct"
+        self.group_id = group_id
+        self.time_stamp = time_stamp
+        self.result_token = result_token
 
     def get_public_tags(self, filter_name='tag:Confidentiality', filter_values=['Public', 'public']):  
         response = self.client.describe_tags(
@@ -45,9 +50,9 @@ class Ec2Actions:
 
         return tagged_sg_ids
 
-    def add_compliant_source(self, group_id, ip_protocol, from_port=0, to_port=65535):
+    def add_compliant_source(self, ip_protocol, from_port=0, to_port=65535):
         result = self.client.authorize_security_group_ingress(
-            GroupId=group_id,
+            GroupId=self.group_id,
             IpPermissions=[
                 {
                     'FromPort': from_port,
@@ -63,152 +68,128 @@ class Ec2Actions:
             ]
 
         )      
-        print(f"Add rule result - {result}")
+        print(f"Add rule result - {result['ResponseMetadata']['HTTPStatusCode']}")
 
-    def remove_non_compliant(self, group_id, ip_protocol, cidr_ip, from_port=0, to_port=65535):
-        print("Found Non Compliant IPV4 rule Security Group, GroupID - ", group_id)
-
-        result = self.client.revoke_security_group_ingress(GroupId=group_id,
-                                                        IpProtocol=ip_protocol,
-                                                        CidrIp=cidr_ip,
-                                                        FromPort=from_port,
-                                                        ToPort=to_port)
-
-        if result:
-            compliance_type = COMPLIANT
-        else:
-            compliance_type = NON_COMPLIANT
-
-        annotation_message = "Permissions were modified"
-
-        return compliance_type, annotation_message
-
-    def remove_non_compliant_ipv6(self, group_id, ip_protocol, cidr_ip, from_port=0, to_port=65535):
-        print("Found Non Compliant IPV6 rule Security Group, GroupID - ", group_id)
-        
-        result = self.client.revoke_security_group_ingress(GroupId=group_id,
-                                                        IpPermissions=[
-                                                            {
-                                                                'FromPort': from_port,
-                                                                'IpProtocol': ip_protocol,
-                                                                'Ipv6Ranges': [
-                                                                    {
-                                                                        'CidrIpv6': cidr_ip
-                                                                    }
-                                                                ],
-                                                                'ToPort': to_port
-                                                            }
-                                                        ]
-                                                    )
-
-        if result:
-            compliance_type = COMPLIANT
-        else:
-            compliance_type = NON_COMPLIANT
-
-        annotation_message = "Permissions were modified"
-
-        return compliance_type, annotation_message    
-
-    def evaluate_compliance(self, configuration_item):
-        if configuration_item["resourceType"] not in APPLICABLE_RESOURCES:
-            return {
-                "compliance_type": "NOT_APPLICABLE",
-                "annotation": "The rule doesn't apply to resources of type " +
-                            configuration_item["resourceType"] + "."
-            }
-
-        if configuration_item["configurationItemStatus"] == "ResourceDeleted":
-            return {
-                "compliance_type": "NOT_APPLICABLE",
-                "annotation": "The configurationItem was deleted and therefore cannot be validated."
-            }
-
-        group_id = configuration_item["configuration"]["groupId"]
-        
-
+    def remove_non_compliant_ingress(self, ip_protocol, cidr_ip, from_port=0, to_port=65535):
         try:
-            response = self.client.describe_security_groups(GroupIds=[group_id])
-        except botocore.exceptions.ClientError as e:
-            print(f"Botocore error - {e}")
-            return {
-                "compliance_type": NON_COMPLIANT,
-                "annotation": "describe_security_groups failure on group " + group_id
-            }
+            print("Found Non Compliant IPV4 rule Security Group, GroupID - ", self.group_id)
+
+            result = self.client.revoke_security_group_ingress(GroupId=self.group_id,
+                                                            IpProtocol=ip_protocol,
+                                                            CidrIp=cidr_ip,
+                                                            FromPort=from_port,
+                                                            ToPort=to_port)
+
+            if result:
+                self.compliance_type = COMPLIANT
+            else:
+                self.compliance_type = NON_COMPLIANT
+
+            self.annotation_message = f"Permissions were modified - {self.compliance_type}"
+        except:
+            print(f"Ingress does not exists")
+
+    def remove_non_compliant_ipv6_ingress(self, ip_protocol, cidr_ip, from_port=0, to_port=65535):
+        print("Found Non Compliant IPV6 rule Security Group, GroupID - ", self.group_id)
         
-        compliance_type = COMPLIANT
-        annotation_message = "Permissions are correct"
+        result = self.client.revoke_security_group_ingress(GroupId=self.group_id,
+                    IpPermissions=[
+                        {
+                            'FromPort': from_port,
+                            'IpProtocol': ip_protocol,
+                            'Ipv6Ranges': [
+                                {
+                                    'CidrIpv6': cidr_ip
+                                }
+                            ],
+                            'ToPort': to_port
+                        }
+                    ]
+                )
 
+        if result:
+            self.compliance_type = COMPLIANT
+        else:
+            self.compliance_type = NON_COMPLIANT
+
+        self.annotation_message = f"Permissions were modified - {self.compliance_type}" 
+
+    def check_open_port_ingress_source(self, ip_permissions, protocol, from_port, to_port):
+        for ip_permission, rule in ip_permissions.items():
+            if ip_permission == "IpRanges":
+                self.check_open_ipv4_ingress_source(rule, protocol, from_port, to_port)
+
+            if ip_permission == "Ipv6Ranges" and rule:
+                self.check_open_ipv6_ingress_source(rule, protocol, from_port, to_port)
+
+    def check_open_ipv4_ingress_source(self, rule, protocol, from_port, to_port):  
+        for cidr_block in rule:
+            cidr_ip = cidr_block["CidrIp"]
+
+            if cidr_ip == "0.0.0.0/0" and from_port in WATCH_PORTS:
+                self.remove_non_compliant_ingress(protocol, cidr_ip, from_port=from_port, to_port=to_port)
+                self.add_compliant_source(protocol, from_port=from_port, to_port=to_port) 
+
+    def check_open_ipv6_ingress_source(self, rule, protocol, from_port, to_port):
+        for cidr_block in rule:
+            cidr_ip = cidr_block["CidrIpv6"]
+            if cidr_ip == "::/0" and from_port in WATCH_PORTS:
+                self.remove_non_compliant_ipv6_ingress(protocol, cidr_ip, from_port=from_port, to_port=to_port)                                                
+
+    def evaluate_sg_ingress_ports(self, ip_permissions):
+        for ip_permission in ip_permissions:            
+            # if the rule is all protocol, FromPort is missing
+            if "FromPort" not in ip_permission:
+                from_port = 0
+                to_port = 65535
+            else:
+                from_port = ip_permission["FromPort"]
+                to_port = ip_permission["ToPort"]
+
+            protocol = ip_permission["IpProtocol"]
+            
+            self.check_open_port_ingress_source(ip_permission, protocol, from_port, to_port)
+
+    def evaluate_each_sg(self, public_tagged_sgs, security_groups):
+        for security_group in security_groups:
+            self.group_id = security_group['GroupId']
+            ip_permission = security_group['IpPermissions']
+
+            if self.group_id not in public_tagged_sgs:
+                self.evaluate_sg_ingress_ports(ip_permission)
+                self.set_config_evaluation()
+
+    def set_config_evaluation(self):
+        try:
+            config = boto3.client('config')
+            
+            config.put_evaluations(
+                Evaluations=[
+                    {
+                        'ComplianceResourceType': 'AWS::EC2::SecurityGroup',
+                        'ComplianceResourceId': self.group_id,
+                        'ComplianceType': self.compliance_type,
+                        "Annotation": self.annotation_message,
+                        'OrderingTimestamp': self.time_stamp
+                    },
+                ],
+                ResultToken=self.result_token
+            )
+        except:
+            print(f"{self.group_id} was not evaluated")
+    
+    def main(self):
         public_tagged_sgs = self.get_public_tagged_sgs()
-        if group_id not in public_tagged_sgs:
-            # lets find public accessible CIDR Blocks
-            for ip_permissions in response["SecurityGroups"][0]["IpPermissions"]:
-                
-                # if the rule is all protocol, FromPort is missing
-                if "FromPort" not in ip_permissions:
-                    from_port = 0
-                    to_port = 65535
-                else:
-                    from_port = ip_permissions["FromPort"]
-                    to_port = ip_permissions["ToPort"]
 
-                protocol = ip_permissions["IpProtocol"]
-                
+        sg_description_response = self.client.describe_security_groups()
+        security_groups = sg_description_response["SecurityGroups"]
 
-                for ip_permission, rule in ip_permissions.items():
-                    if ip_permission == "IpRanges":
-                        for cidr_block in rule:
-                            cidr_ip = cidr_block["CidrIp"]
-
-                            if cidr_ip == "0.0.0.0/0" and from_port in WATCH_PORTS:
-                                compliance_type, annotation_message = self.remove_non_compliant(group_id,
-                                                                        protocol,
-                                                                        cidr_ip,
-                                                                        from_port=from_port,
-                                                                        to_port=to_port)
-                                self.add_compliant_source(group_id, protocol, from_port=from_port, to_port=to_port)
-                    
-                    if ip_permission == "Ipv6Ranges" and rule:
-                        for cidr_block in rule:
-                            cidr_ip = cidr_block["CidrIpv6"]
-                            if cidr_ip == "::/0" and from_port in WATCH_PORTS:
-                                compliance_type, annotation_message = self.remove_non_compliant_ipv6(group_id,
-                                                                        protocol,
-                                                                        cidr_ip,
-                                                                        from_port=from_port,
-                                                                        to_port=to_port)
-                    else:
-                        compliance_type = COMPLIANT
-                        annotation_message = "Permissions are correct"
-        return {
-            "compliance_type": compliance_type,
-            "annotation": annotation_message
-        }
-
+        self.evaluate_each_sg(public_tagged_sgs, security_groups)
 
 def lambda_handler(event, context):
+    print(event)
     invoking_event = json.loads(event['invokingEvent'])
-    configuration_item = invoking_event["configurationItem"]
+    time_stamp=invoking_event['notificationCreationTime']
+    result_token=event['resultToken']
 
-    evaluation = Ec2Actions().evaluate_compliance(configuration_item)
-
-    config = boto3.client('config')
-
-    # the call to put_evalations is required to inform aws config about the changes
-    response = config.put_evaluations(
-        Evaluations=[
-            {
-                'ComplianceResourceType': invoking_event['configurationItem']['resourceType'],
-                'ComplianceResourceId': invoking_event['configurationItem']['resourceId'],
-                'ComplianceType': evaluation["compliance_type"],
-                "Annotation": evaluation["annotation"],
-                'OrderingTimestamp': invoking_event['configurationItem']['configurationItemCaptureTime']
-            },
-        ],
-        ResultToken=event['resultToken'])
-
-    print(f"Handler response - {response}")
-
-if __name__ == "__main__":
-    x = Ec2Actions().get_public_tagged_sgs()
-    print(x)
+    Ec2Actions(time_stamp=time_stamp,result_token=result_token).main()

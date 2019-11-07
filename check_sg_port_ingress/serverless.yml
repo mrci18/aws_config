@@ -26,6 +26,7 @@ functions:
       include:
         - "check_sg_port_ingress.py"
         - "slack_alert.py"
+        # Remove last part of function name
     name: ${self:service}_check_sg_port_ingress
     role: CheckRole
     environment:
