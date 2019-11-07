@@ -9,15 +9,13 @@ Resources:
     Type: AWS::Config::ConfigRule
     Properties: 
       ConfigRuleName: !Sub ${Service}CheckSGPortIngress
-      Scope:
-        ComplianceResourceTypes: 
-          - "AWS::EC2::SecurityGroup"
       Source: 
         Owner: "CUSTOM_LAMBDA"
         SourceDetails: 
           - 
             EventSource: "aws.config"
-            MessageType: "ConfigurationItemChangeNotification"
+            MaximumExecutionFrequency: "TwentyFour_Hours"
+            MessageType: "ScheduledNotification"
         SourceIdentifier: !ImportValue checkSGPortIngressArn
 
 Parameters:

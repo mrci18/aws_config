@@ -1,12 +1,14 @@
 import sys
-sys.path.append("../")
 sys.path.append("../../check_sg_port_ingress/")
 
 import unittest
 import boto3
 from moto import mock_ec2
-from sg_config import CustomSG
+
 from check_sg_port_ingress import Ec2Actions, lambda_handler
+from sg_config import CustomSG
+
+
 
 @mock_ec2
 def setUpModule():

@@ -26,7 +26,7 @@ functions:
       include:
         - "tag_sg_termination.py"
         - "slack_alert.py"
-    name: ${self:service}_tag_sg_termination
+    name: ${self:service}
     role: CheckRole
     environment:
       SERVICE: ${self:service}

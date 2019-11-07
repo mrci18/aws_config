@@ -106,7 +106,7 @@ gitOwner="mrci18"
 repo="aws_config"
 buildspec="buildspec.yml"
 
-# read -p "Stage/Account (e.g. mlscDev, mlscPreprod, mlscProd, mdaas, infosec, matsonlabs, qa, dr, org, china, workspaces, dev, pp, prod): " stage
+read -p "Stage/Account (e.g. mlscDev, mlscPreprod, mlscProd, mdaas, infosec, matsonlabs, qa, dr, org, china, workspaces, dev, pp, prod): " stage
 
 echo -e "\n${message}"
 read -sp "GitHub OAuth Token (Reference the doc link above if you need help): " oAuth
@@ -116,10 +116,10 @@ read -sp "Github password (i.e The GitHub account password that created the OAut
 
 ### Main ###
 # Place keys in this directory
-# deploy_kms AWSErrorKeyStack infra/kms/security_errors_key.yaml
-# deploy_kms SecurityDeploymentKeyStack infra/kms/security_deployment_key.yaml
-# set_secure_ssm  ${slack_error} ${error_webhook} AWSErrorKeyStack
-# set_secure_ssm  ${slack_deployment} ${deployment_webhook} SecurityDeploymentKeyStack
+deploy_kms AWSErrorKeyStack infra/kms/security_errors_key.yaml
+deploy_kms SecurityDeploymentKeyStack infra/kms/security_deployment_key.yaml
+set_secure_ssm  ${slack_error} ${error_webhook} AWSErrorKeyStack
+set_secure_ssm  ${slack_deployment} ${deployment_webhook} SecurityDeploymentKeyStack
 deploy_pipeline_bucket
 deploy_regular_cft CodePipelineRoleStack infra/pipeline/iam/CodePipelineRole.yaml
 deploy_regular_cft CodeBuildRoleStack infra/pipeline/iam/CodeBuildRole.yaml

@@ -16,6 +16,11 @@ phases:
     commands:
       - pwd
       - export rootDir=$(pwd)
+      - echo "Installing python requirements..."
+      - pip install 'moto==1.3.13'
+      - echo "Running unittest..."
+      - cd ${rootDir}/tests/check_sg_port_ingress && python3 -m unittest
+      - echo "Tests complete"
       - export ACCOUNT_ALIAS=$(aws iam list-account-aliases --query "AccountAliases[]" --output text)
       - echo ${ACCOUNT_ALIAS}
       - export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query 'Account')
