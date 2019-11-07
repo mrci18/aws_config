@@ -1,3 +1,6 @@
+import sys
+sys.path.append("../monitoring/")
+
 import logging  
 import boto3
 import botocore
