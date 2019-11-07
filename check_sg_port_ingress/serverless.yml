@@ -25,7 +25,7 @@ functions:
     package:
       include:
         - "check_sg_port_ingress.py"
-        - "../monitoring/slack_alert.py"
+        - "slack_alert.py"
     name: ${self:service}
     role: CheckRole
     environment:

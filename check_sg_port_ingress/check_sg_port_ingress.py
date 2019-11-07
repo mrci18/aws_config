@@ -1,11 +1,7 @@
-import sys
-sys.path.append("../monitoring/")
-
 import logging  
 import boto3
 import botocore
 import json
-
 from slack_alert import get_ssm_params, send_slack_message
 
 

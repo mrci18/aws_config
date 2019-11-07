@@ -38,7 +38,7 @@ functions:
     package:
       include:
         - "terminate_tagged.py"
-        - "../monitoring/slack_alert.py"
+        - "slack_alert.py"
     name: ${self:service}_terminate_tagged
     role: DeleteRole
     environment:
