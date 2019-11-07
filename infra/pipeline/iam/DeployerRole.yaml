@@ -233,7 +233,7 @@ Resources:
             Effect: Allow
             Action:
               - config:PutConfigRule
-            Resource: !Sub arn:aws:config:${AWS::Region}:${AWS::AccountId}:config-rule/*
+            Resource: !Sub arn:aws:config:${AWS::Region}:${AWS::AccountId}:*
 
 Parameters:
   Service:

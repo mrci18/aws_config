@@ -2,22 +2,6 @@ service: buildStatus
 
 custom:
   stage: ${opt:stage, 'matsonlabs'}
-  environment:
-    MESSAGE:
-      mlscDev: "mlscDev"
-      mlscPreprod: "mlscPreprod"
-      mlscProd: "mlscProd"
-      mdaas: "mdaas"
-      infosec: "infosec"
-      matsonlabs: "matsonlabs"
-      qa: "qa"
-      dr: "dr"
-      org: "org"
-      china: "china"
-      workspaces: "workspaces"
-      dev: "This is running development environment"
-      pp: "This is running pp environment"
-      prod: "This is running production environment"
 
 provider:
   name: aws

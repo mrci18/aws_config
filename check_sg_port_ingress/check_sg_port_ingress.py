@@ -3,6 +3,9 @@ import boto3
 import botocore
 import json
 
+from slack_alert import get_ssm_params, send_slack_message
+
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 exception_message = "Exception occured"
@@ -12,6 +15,7 @@ APPLICABLE_RESOURCES = ["AWS::EC2::SecurityGroup"]
 COMPLIANT = "COMPLIANT"
 NON_COMPLIANT = "NON_COMPLIANT"
 NOT_APPLICABLE = "NOT_APPLICABLE"
+
 
 class Ec2Actions:
     def __init__(self, group_id='', time_stamp='', result_token =''):
@@ -187,9 +191,15 @@ class Ec2Actions:
         self.evaluate_each_sg(public_tagged_sgs, security_groups)
 
 def lambda_handler(event, context):
-    print(event)
-    invoking_event = json.loads(event['invokingEvent'])
-    time_stamp=invoking_event['notificationCreationTime']
-    result_token=event['resultToken']
+    try:
+        invoking_event = json.loads(event['invokingEvent'])
+        time_stamp=invoking_event['notificationCreationTime']
+        result_token=event['resultToken']
 
-    Ec2Actions(time_stamp=time_stamp,result_token=result_token).main()
+        Ec2Actions(time_stamp=time_stamp,result_token=result_token).main()
+    except Exception:
+        logger.exception(exception_message)
+        error_webhook = get_ssm_params("SECURITY_ERRORS_SLACK")
+        send_slack_message("Something went wrong, please check cloudwatch logstream", context=context, webhook_url=error_webhook)
+
+    return "Lambda Finished"
