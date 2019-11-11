@@ -202,6 +202,10 @@ Resources:
               - cloudformation:ExecuteChangeSet
               - cloudformation:ValidateTemplate
             Resource: !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/buildStatus*/*
+          - Sid: Delete 
+            Effect: Allow
+            Action:
+              - cloudformation:CreateUploadBucket
           - Sid: AllowResources
             Effect: Allow
             Action:
