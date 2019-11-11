@@ -40,11 +40,11 @@ phases:
       - TOKEN2=$(echo $role2 |awk '{print $9}' |  tr -d '"' | tr -d ',' | tr -d '{' | tr -d '}')
       - export AWS_ACCESS_KEY_ID=$KEY2 && export AWS_SESSION_TOKEN=$TOKEN2 && export AWS_SECRET_ACCESS_KEY=$SECRET2
       - cd ${rootDir}/infra/pipeline/monitoring && aws cloudformation deploy --no-fail-on-empty-changeset --template-file ./BuildStatus.yaml --stack-name ${SERVICE}BuildStatusCWEvent --parameter-overrides Service=${SERVICE}      
-      - aws cloudformation delete-stack --stack-name ${SERVICE}TagSGTermination
+      - aws cloudformation stack-delete-complete --stack-name ${SERVICE}TagSGTermination
       - cd ${rootDir}/tag_for_termination && npm install && sls deploy --stage ${STAGE}
       - cd ${rootDir}/tag_for_termination && aws cloudformation deploy --no-fail-on-empty-changeset --template-file ./config.yaml --stack-name ${SERVICE}TagSGTermination --parameter-overrides Service=${SERVICE} 
       - echo "Deploying ${SERVICE}CheckSGPortIngress section..."
-      - aws cloudformation delete-stack --stack-name ${SERVICE}CheckSGPortIngress
+      - aws cloudformation stack-delete-complete --stack-name ${SERVICE}CheckSGPortIngress
       - cd ${rootDir}/check_sg_port_ingress && npm install && sls deploy --stage ${STAGE}
       - cd ${rootDir}/check_sg_port_ingress && aws cloudformation deploy --no-fail-on-empty-changeset --template-file ./config.yaml --stack-name ${SERVICE}CheckSGPortIngress --parameter-overrides Service=${SERVICE} 
 
