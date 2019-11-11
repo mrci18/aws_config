@@ -225,7 +225,7 @@ Resources:
   PutConfigPolicy:
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: 'PutConfigPolicy'
+      PolicyName: 'ConfigPolicy'
       Roles: [{Ref: "ServiceDeployerRole"}]
       PolicyDocument:
         Version: '2012-10-17'
@@ -234,6 +234,7 @@ Resources:
             Effect: Allow
             Action:
               - config:PutConfigRule
+              - config:DeleteConfigRule
             Resource: !Sub arn:aws:config:${AWS::Region}:${AWS::AccountId}:*
 
 Parameters:
