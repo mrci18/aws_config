@@ -58,6 +58,7 @@ Resources:
               - lambda:ListVersionsByFunction
               - lambda:TagResource
               - lambda:UntagResource
+              - lambda:ListTags
             Resource:
               - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Service}*
           - Sid: LambdaPermissionBuildStatus

@@ -30,7 +30,6 @@ functions:
     name: buildStatus-${self:provider.stage}
     role: SlackRole
     environment:
-      # SERVICE: ${env:SERVICE}
       REGION: ${self:provider.region}
       ACCOUNT_ALIAS: ${env:ACCOUNT_ALIAS}
 
