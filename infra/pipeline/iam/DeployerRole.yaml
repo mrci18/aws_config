@@ -235,6 +235,7 @@ Resources:
             Action:
               - config:PutConfigRule
               - config:DeleteConfigRule
+              - config:DescribeConfigRules
             Resource: !Sub arn:aws:config:${AWS::Region}:${AWS::AccountId}:*
 
 Parameters:
