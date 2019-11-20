@@ -101,8 +101,8 @@ read -sp "The webhook URL from slack for security deployment channel: " deployme
 
 # For pipeline config
 branch="master"
-gitOwner="mrci18"
-repo="aws_config"
+gitOwner="MatsonInc"
+repo="AWSConfig"
 buildspec="buildspec.yml"
 
 echo -e "\n${message}"

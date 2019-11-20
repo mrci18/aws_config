@@ -32,7 +32,7 @@ class Ec2Actions:
         return all_sg_ids
 
     def get_sgs_attached_to_cft(self, filter_name='tag:aws:cloudformation:stack-id', filter_values=['*']):  
-        tags_attached_to_cft = []
+        sgs_attached_to_cft = []
         response = self.client.describe_tags(
             Filters=[
                 {
@@ -46,41 +46,10 @@ class Ec2Actions:
         for tagged_resource in tagged_resources:
             resource_type = tagged_resource['ResourceType']
             if resource_type == 'security-group':
-                tags_attached_to_cft.append(tagged_resource['ResourceId'])
+                sgs_attached_to_cft.append(tagged_resource['ResourceId'])
 
-        return tags_attached_to_cft        
-        # print(tags)
+        return sgs_attached_to_cft        
 
-        # return tags
-
-    def get_cft_attached_sgs(self):
-    # def get_sg_tags(self):
-        sgs_and_tags = {}
-        response = self.client.describe_security_groups(
-            MaxResults=500
-        )
-        security_groups = response['SecurityGroups']
-        for security_group in security_groups:
-            if 'Tags' in security_group.keys():
-
-                group_id = security_group['GroupId']
-                # print(group_id)
-                tags = security_group['Tags']
-                for tag in tags:
-                    if 'aws:cloudformation:stack-id' in tag['Key']:
-                        print(group_id)
-                    # if 'aws:cloudformation:stack-id' in tag
-                    # if 'aws:cloudformation:stack-id' in tag.keys():
-                    #     print(group_id)
-            # for tag in tags:
-            #     print(tag)
-
-
-        #     # group_name = security_group['GroupName']
-        #     group_id = security_group['GroupId']
-        #     all_sg_ids.append(group_id)
-
-        # return all_sg_ids
     def set_termination_tag(self, group_id, tag_value='True'):
         try:
             self.client.create_tags(
@@ -144,6 +113,7 @@ class Ec2Actions:
 
         return sg_ids_attached_to_network
 
+
 class AutoScalingActions:
     def __init__(self):
         self.client = boto3.client('autoscaling')
@@ -161,6 +131,7 @@ class AutoScalingActions:
                 sgs_attached_to_launch_configs += security_groups
 
         return sgs_attached_to_launch_configs
+
 
 class LambdaActions:
     def __init__(self):
@@ -285,17 +256,3 @@ def lambda_handler(event, context):
 
     return "Lambda Finished"
 
-if __name__ == "__main__":
-    # AutoScalingActions().get_sgs_attached_to_launch_configs()
-    x = set()
-    y = set()
-
-    x.add(1)
-    x.add(22)
-    y.add(1)
-    y.add(3)
-
-    x.union(y)
-
-    print(x)
-    # print(sg_ids)
